@@ -22,6 +22,14 @@ func AllCategory() ([]Category, error) {
 	return categories, err
 }
 
+func GetOne(id string) (Category, error) {
+	category := Category{}
+	if config.Database.First(&category, id).RowsAffected == 0 {
+		return category, errors.New("invalid category_id " + id)
+	}
+	return category, nil
+}
+
 func DeleteCategory(id string) error {
 	if config.Database.Debug().Delete(&Category{}, id).RowsAffected == 0 {
 		return errors.New("invalid category_id " + id)

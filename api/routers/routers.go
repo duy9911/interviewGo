@@ -20,6 +20,7 @@ func HandleRequests() {
 	r.HandleFunc("/", index)
 	//ctg
 	r.HandleFunc("/api/categories", middleware.SetMiddlewareJSON(controller.GetAllCategory)).Methods("GET")
+	r.HandleFunc("/api/categories/{id:[0-9]+}", middleware.SetMiddlewareJSON(controller.GetCategoryById)).Methods("GET")
 	r.HandleFunc("/api/categories/{id:[0-9]+}", middleware.SetMiddlewareJSON(controller.DeleteOneCategory)).Methods("DELETE")
 	r.HandleFunc("/api/categories", middleware.SetMiddlewareJSON(controller.CreateCategory)).Methods("POST")
 	r.HandleFunc("/api/categories", middleware.SetMiddlewareJSON(controller.UpdateCategory)).Methods("PUT")
