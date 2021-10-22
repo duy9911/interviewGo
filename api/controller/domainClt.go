@@ -67,7 +67,9 @@ func DeleteOneDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//delele cache
+	//delete doc id in elasticDB
 	cache.Delete("domain" + id)
+	elasticDB.DeleteDoc(id)
 	fmt.Fprintf(w, "%s\n", "Deleted domain.id "+id)
 }
 

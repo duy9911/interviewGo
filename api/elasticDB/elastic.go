@@ -46,6 +46,7 @@ func NewElasticSearch() *elastic.Client {
 func AddToEs() {
 	ctx := context.Background()
 	clientEs := NewElasticSearch()
+	clientEs.SnapshotDeleteRepository()
 	domains, errGetdomain := models.AllDomain()
 
 	if errGetdomain != nil {
@@ -106,6 +107,25 @@ func UpdateField(site models.SiteInfo) {
 		panic(errC)
 	}
 	fmt.Printf("New version of domain %q is now %d\n", update.Id, update.Version)
+}
+
+func DeleteDoc(key string) {
+
+	client := NewElasticSearch()
+	res, err := client.Delete().Index("domain").Id("1").Do(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+	if want, have := "deleted", res.Result; want != have {
+		errMsg := fmt.Errorf("expected Result = %q; got %q", want, have)
+		panic(errMsg)
+
+	}
+	_, err = client.Refresh().Index("domain").Do(context.TODO())
+	if err != nil {
+		panic(err)
+	}
+
 }
 
 func SearchFullText(r *http.Request) (SearchConfigure, error) {
