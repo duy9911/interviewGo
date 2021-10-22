@@ -9,6 +9,7 @@ require (
 	github.com/lib/pq v1.10.3 // indirect
 	github.com/olivere/elastic/v7 v7.0.29
 	github.com/sirupsen/logrus v1.4.2
+	golang.org/x/text v0.3.6
 	gorm.io/datatypes v1.0.2
 	gorm.io/driver/mysql v1.1.2
 	gorm.io/gorm v1.21.16

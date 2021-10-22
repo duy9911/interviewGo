@@ -31,6 +31,8 @@ func GetCategoryById(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 	ctgC := cache.Get(id)
+	fmt.Println("done")
+
 	if ctgC == nil {
 		ctg, err := models.GetOne(id)
 		if err != nil {

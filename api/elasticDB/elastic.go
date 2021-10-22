@@ -1,12 +1,14 @@
-package models
+package elasticDB
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"interview1710/api/models"
 	"log"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
 	"time"
@@ -15,17 +17,17 @@ import (
 )
 
 type SearchConfigure struct {
-	Text         string     `json:"text_search,omitempty"`
-	Limit        int        `json:"limit,omitempty"`
-	Omit         int        `json:"omit,omitempty"`
-	TotalMatched int        `json:"totalMatch,omitempty"`
-	DomainMatchs []SiteInfo `json:"domain_matched,omitempty"`
+	Text         string            `json:"text_search,omitempty"`
+	Limit        int               `json:"limit,omitempty"`
+	Omit         int               `json:"omit,omitempty"`
+	TotalMatched int               `json:"totalMatch,omitempty"`
+	DomainMatchs []models.SiteInfo `json:"domain_matched,omitempty"`
 }
 
 func NewElasticSearch() *elastic.Client {
 	client, err := elastic.NewClient(
 		elastic.SetSniff(false),
-		elastic.SetURL("http://localhost:9200"),
+		elastic.SetURL(os.Getenv("ES_URL")),
 		elastic.SetHealthcheckInterval(5*time.Second), // quit trying after 5 seconds
 	)
 	if err != nil {
@@ -40,10 +42,11 @@ func NewElasticSearch() *elastic.Client {
 	return client
 }
 
+//fisrt index
 func AddToEs() {
 	ctx := context.Background()
 	clientEs := NewElasticSearch()
-	domains, errGetdomain := AllDomain()
+	domains, errGetdomain := models.AllDomain()
 
 	if errGetdomain != nil {
 		// Handle error
@@ -65,7 +68,45 @@ func AddToEs() {
 	fmt.Println("Done...!")
 }
 
-// controller.QueryEs("Keywords", "gun")
+//index when have a new domain
+func AddOne(site models.SiteInfo) {
+	ctx := context.Background()
+	clientEs := NewElasticSearch()
+	esRespond, err := clientEs.Index().
+		Index("domain").
+		Type("keywords").
+		Id(strconv.Itoa(int(site.ID))).
+		BodyJson(site).
+		Do(ctx)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Doaman %s Indexed with  %s to index %s \n", site.Domain, esRespond.Id, esRespond.Index)
+	fmt.Println("Done...!")
+}
+
+func UpdateField(site models.SiteInfo) {
+	ctx := context.Background()
+	clientEs := NewElasticSearch()
+	data := map[string]interface{}{
+		"updated_at":  site.UpdatedAt,
+		"domain":      site.Domain,
+		"tags":        site.Tags,
+		"category_id": site.CategoryID,
+	}
+	update, err := clientEs.
+		Update().
+		Index("domain").
+		Type("keywords").
+		Id("4").Doc(data).
+		Do(ctx)
+
+	if err != nil {
+		errC := errors.New("update index " + fmt.Sprint(err))
+		panic(errC)
+	}
+	fmt.Printf("New version of domain %q is now %d\n", update.Id, update.Version)
+}
 
 func SearchFullText(r *http.Request) (SearchConfigure, error) {
 	ctx := context.Background()
@@ -87,16 +128,17 @@ func SearchFullText(r *http.Request) (SearchConfigure, error) {
 
 	fmt.Printf("Query with term {%v with  %v} took %d milliseconds\n", "tags", searchInfo.Text, searchResult.TookInMillis)
 	var (
-		ttyp SiteInfo
-		site []SiteInfo
+		ttyp models.SiteInfo
+		site []models.SiteInfo
 	)
 	// detached each item in search result then print for each
 	for _, item := range searchResult.Each(reflect.TypeOf(ttyp)) {
-		if t, ok := item.(SiteInfo); ok {
+		if t, ok := item.(models.SiteInfo); ok {
 			fmt.Printf("Filed by %v: %s\n", t.Domain, t.Tags)
 			site = append(site, t)
 		}
 	}
+	// custom respond search
 	results := SearchConfigure{
 		Text:         searchInfo.Text,
 		Limit:        searchInfo.Limit,
@@ -109,30 +151,6 @@ func SearchFullText(r *http.Request) (SearchConfigure, error) {
 	fmt.Printf("Found a total of %d field\n", searchResult.TotalHits())
 	return results, nil
 
-}
-
-func UpdateIndex(site SiteInfo) {
-	ctx := context.Background()
-	clientEs := NewElasticSearch()
-	data := map[string]interface{}{
-		"updated_at":  site.UpdatedAt,
-		"domain":      site.Domain,
-		"tags":        site.Tags,
-		"category_id": site.CategoryID,
-	}
-
-	update, err := clientEs.
-		Update().
-		Index("domain").
-		Type("keywords").
-		Id("4").Doc(data).
-		Do(ctx)
-
-	if err != nil {
-		errC := errors.New("update index " + fmt.Sprint(err))
-		panic(errC)
-	}
-	fmt.Printf("New version of domain %q is now %d\n", update.Id, update.Version)
 }
 
 func validateTextSearch(r *http.Request) (SearchConfigure, error) {

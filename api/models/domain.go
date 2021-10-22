@@ -45,7 +45,6 @@ func UpdateDomain(r *http.Request) (SiteInfo, error) {
 		return siteInfo, errors.New("invalid Domain.id change other")
 	}
 	//update elastic search with id doc
-	UpdateIndex(siteInfo)
 	return siteInfo, nil
 }
 

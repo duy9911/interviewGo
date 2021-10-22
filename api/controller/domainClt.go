@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"interview1710/api/elasticDB"
 	"interview1710/api/models"
 	"net/http"
 	"strconv"
@@ -41,12 +42,14 @@ func DeleteOneDomain(w http.ResponseWriter, r *http.Request) {
 
 func CreateDomain(w http.ResponseWriter, r *http.Request) {
 
-	domains, err := models.CreateDomain(r)
+	domain, err := models.CreateDomain(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	uj, err := json.Marshal(domains)
+
+	elasticDB.AddOne(domain) //Add new doc elaticDB
+	uj, err := json.Marshal(domain)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		fmt.Println(err)
@@ -62,6 +65,9 @@ func UpdateDomain(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	elasticDB.UpdateField(domains) //update elasticDB
+
 	uj, err := json.Marshal(domains)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -96,8 +102,7 @@ func DomainBasedOnCatId(w http.ResponseWriter, r *http.Request) {
 }
 
 func SearchDomain(w http.ResponseWriter, r *http.Request) {
-
-	result, err := models.SearchFullText(r)
+	result, err := elasticDB.SearchFullText(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
