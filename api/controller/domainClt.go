@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"interview1710/api/cache"
 	"interview1710/api/elasticDB"
 	"interview1710/api/models"
 	"net/http"
@@ -28,6 +29,34 @@ func GetAllDomain(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", uj)
 }
 
+func GetDomainById(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	dmC := cache.Get("domain" + id)
+	if dmC == nil {
+		dm, err := models.GetOneDomain(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		cache.Set("domain"+strconv.Itoa(int(dm.ID)), dm)
+		uj, err := json.Marshal(dm)
+		if err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			fmt.Println(err)
+		}
+		fmt.Println("DB ")
+		fmt.Fprintf(w, "%s \n", uj)
+		return
+	}
+	fmt.Println("REDIS")
+	uj, err := json.Marshal(&dmC)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		fmt.Println(err)
+	}
+	fmt.Fprintf(w, "%s \n", uj)
+}
+
 func DeleteOneDomain(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -37,6 +66,8 @@ func DeleteOneDomain(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	//delele cache
+	cache.Delete("domain" + id)
 	fmt.Fprintf(w, "%s\n", "Deleted domain.id "+id)
 }
 
@@ -48,7 +79,10 @@ func CreateDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	elasticDB.AddOne(domain) //Add new doc elaticDB
+	//add to cache
+	//add to esDB
+	cache.Set("domain"+strconv.Itoa(int(domain.ID)), domain)
+	elasticDB.AddOne(domain)
 	uj, err := json.Marshal(domain)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -78,7 +112,6 @@ func UpdateDomain(w http.ResponseWriter, r *http.Request) {
 }
 
 func DomainBasedOnCatId(w http.ResponseWriter, r *http.Request) {
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 	limitStr := vars["limit"]

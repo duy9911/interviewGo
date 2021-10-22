@@ -22,7 +22,7 @@ func AllCategory() ([]Category, error) {
 	return categories, err
 }
 
-func GetOne(id string) (Category, error) {
+func GetOneCategory(id string) (Category, error) {
 	category := Category{}
 	if config.Database.First(&category, id).RowsAffected == 0 {
 		return category, errors.New("invalid category_id " + id)

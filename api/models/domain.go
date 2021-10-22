@@ -25,6 +25,15 @@ func AllDomain() ([]SiteInfo, error) {
 	return siteInfo, err
 }
 
+func GetOneDomain(id string) (SiteInfo, error) {
+	siteInfo := SiteInfo{}
+
+	if config.Database.First(&siteInfo, id).RowsAffected == 0 {
+		return siteInfo, errors.New("invalid siteinfo_id " + id)
+	}
+	return siteInfo, nil
+}
+
 func DeleteDomain(id string) error {
 	if config.Database.Debug().Delete(&SiteInfo{}, id).RowsAffected == 0 { //check if already deleted
 		return errors.New("invalid domain_id " + id)
