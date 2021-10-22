@@ -30,7 +30,7 @@ func HandleRequests() {
 	r.HandleFunc("/api/domains/{id:[0-9]+}", middleware.SetMiddlewareJSON(controller.DeleteOneDomain)).Methods("DELETE")
 	r.HandleFunc("/api/domains", middleware.SetMiddlewareJSON(controller.CreateDomain)).Methods("POST")
 	r.HandleFunc("/api/domains", middleware.SetMiddlewareJSON(controller.UpdateDomain)).Methods("PUT")
-	//search
+	//search full text with keyword
 	r.HandleFunc("/api/domains/search", middleware.SetMiddlewareJSON(controller.SearchDomain)).Methods("POST")
 
 	//show domain from one ctgID
